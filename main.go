@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+
+	"github.com/go-chi/chi/v5"
 )
 
 func (cfg *apiConfig) metricsHandler(w http.ResponseWriter, r *http.Request) {
@@ -29,16 +31,24 @@ func handlerReadiness(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(http.StatusText(http.StatusOK)))
 }
 
+func middlewareLog(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("%s %s", r.Method, r.URL.Path)
+		next.ServeHTTP(w, r)
+	})
+}
+
 func main() {
 	const filepathRoot = "."
 	const port = "8080"
 
-	mux := http.NewServeMux()
+	r := chi.NewRouter()
 	apiCfg := apiConfig{fileserverHits: 0}
-	mux.Handle("/", apiCfg.middlewareMetricsInc(http.FileServer(http.Dir(filepathRoot))))
-	mux.HandleFunc("/healthz", handlerReadiness)
-	mux.HandleFunc("/metrics", apiCfg.metricsHandler)
-	corsMux := middlewareCors(mux)
+	r.Mount("/", apiCfg.middlewareMetricsInc(http.FileServer(http.Dir(filepathRoot))))
+	r.Get("/healthz", handlerReadiness)
+	r.Get("/metrics", apiCfg.metricsHandler)
+	logMux := middlewareLog(r)
+	corsMux := middlewareCors(logMux)
 
 	srv := &http.Server{
 		Addr:    ":" + port,
