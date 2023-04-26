@@ -5,11 +5,21 @@ import (
 	"net/http"
 )
 
+type healthHandler struct {
+}
+
+func (hh healthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(200)
+	w.Write([]byte("OK"))
+}
+
 func main() {
 	const filepathRoot = "."
 	const port = "8080"
 
 	mux := http.NewServeMux()
+	hh := healthHandler{}
+	mux.Handle("/healthz", hh)
 	mux.Handle("/", http.FileServer(http.Dir(filepathRoot)))
 	corsMux := middlewareCors(mux)
 
@@ -33,4 +43,8 @@ func middlewareCors(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+func handler(http.ResponseWriter, *http.Request) {
+
 }
