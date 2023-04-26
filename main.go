@@ -41,7 +41,3 @@ func middlewareCors(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
-
-func handler(http.ResponseWriter, *http.Request) {
-
-}
