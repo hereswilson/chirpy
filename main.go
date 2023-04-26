@@ -5,12 +5,10 @@ import (
 	"net/http"
 )
 
-type healthHandler struct {
-}
-
-func (hh healthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(200)
-	w.Write([]byte("OK"))
+func handlerReadiness(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("Content-Type", "text/plain; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(http.StatusText(http.StatusOK)))
 }
 
 func main() {
@@ -18,9 +16,8 @@ func main() {
 	const port = "8080"
 
 	mux := http.NewServeMux()
-	hh := healthHandler{}
-	mux.Handle("/healthz", hh)
 	mux.Handle("/", http.FileServer(http.Dir(filepathRoot)))
+	mux.HandleFunc("/healthz", handlerReadiness)
 	corsMux := middlewareCors(mux)
 
 	srv := &http.Server{
